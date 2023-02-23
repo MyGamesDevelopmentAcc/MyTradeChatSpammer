@@ -25,7 +25,6 @@ end
 
 commands["r"] = function(txt)
 	local id = "#"..(#getRecordsAsList() + 1);
-	txt = txt:sub(txt:find(" ") + 1);
 	print(id)
 	print(txt)
 	AddonNS.db.singles[id] = txt;
