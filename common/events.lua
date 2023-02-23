@@ -1,6 +1,5 @@
 local addonName, AddonNS = ...
 AddonNS.events = {}
-LibStub("AceEvent-3.0"):Embed(AddonNS.events);
 local events = {};
 local function addEvent(eventName, f)
     events[eventName] =  events[eventName] or {};

@@ -5,8 +5,8 @@ AddonNS.db.groups = {};
 _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
 
--- [not yet implemented] /mtcs record MY_SUPER_ID1 WTS super cost thingy
--- [not yet implemented] /mtcs recordgroup MY_SUPERGROUP_ID1
+-- /mtcs record MY_SUPER_ID1 WTS super cost thingy
+-- /mtcs r -- records with random id 
 -- [not yet implemented] /mtcs play MY_SUPER_ID1 say|trade
 -- [not yet implemented] /mtcs play MY_SUPER_ID1
 -- [not yet implemented] /mtcs playnext MY_SUPERGROUP_ID1 say|trade
@@ -15,6 +15,21 @@ _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 -- [not yet implemented] /mtcs print (optional)ID --if ID not provided, prints all recorded messages
 
 local commands = {};
+local function getRecordsAsList()
+	local singlesPlaylist={}
+	for i, v in pairs(AddonNS.db.singles) do
+		table.insert(singlesPlaylist, v);
+	end
+	return singlesPlaylist;
+end
+
+commands["r"] = function(txt)
+	local id = "#"..(#getRecordsAsList() + 1);
+	txt = txt:sub(txt:find(" ") + 1);
+	print(id)
+	print(txt)
+	AddonNS.db.singles[id] = txt;
+end
 
 commands["record"] = function(txt)
 	local id = txt:sub(1, txt:find(" ") - 1);
@@ -26,11 +41,16 @@ end
 
 local play = 1;
 local spam = true;
-local function playNext(where)
-	local singlesPlaylist = {}
+local function getRecordsAsList()
+	local singlesPlaylist={}
 	for i, v in pairs(AddonNS.db.singles) do
 		table.insert(singlesPlaylist, v);
 	end
+	return singlesPlaylist;
+end
+
+local function playNext(where)
+	local singlesPlaylist = getRecordsAsList();
 	if (#singlesPlaylist >0) then
 		play = play > #singlesPlaylist and 1 or play;
 		SendChatMessage(singlesPlaylist[play], where, nil, 2);

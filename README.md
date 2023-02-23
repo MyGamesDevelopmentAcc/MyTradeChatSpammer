@@ -1,2 +1,3 @@
 # MyTradeChatSpammer
  
+Work in progress
