@@ -23,19 +23,21 @@ local function getRecordsAsList()
 	return singlesPlaylist;
 end
 
-commands["r"] = function(txt)
-	local id = "#"..(#getRecordsAsList() + 1);
+local function record(id, txt)
 	print(id)
 	print(txt)
 	AddonNS.db.singles[id] = txt;
+end
+_G["MTCS_API_Record"] = record;
+commands["r"] = function(txt)
+	local id = "#"..(#getRecordsAsList() + 1);
+	record(id, txt)
 end
 
 commands["record"] = function(txt)
 	local id = txt:sub(1, txt:find(" ") - 1);
 	txt = txt:sub(txt:find(" ") + 1);
-	print(id)
-	print(txt)
-	AddonNS.db.singles[id] = txt;
+	record(id, txt)
 end
 
 local play = 1;
