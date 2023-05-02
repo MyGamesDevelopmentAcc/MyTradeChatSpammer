@@ -1,7 +1,7 @@
-## Interface: 100002
-## Title: My TradeChatSpammer
+## Interface: 100100
+## Title: |CFFFF2459My|r TradeChatSpammer
 ## DefaultState: Enabled
-## Version: 10.0.2-1.0
+## Version: 10.1.0-1.1
 ## SavedVariablesPerCharacter: MyTradeChatSpammerDB
 common/events.lua
 common/db.lua
