@@ -203,9 +203,9 @@ end)
 
 --- [[ spam button]]
 local spamButton = CreateFrame("Button", nil, containerFrame, "UIPanelButtonTemplate")
-spamButton:SetPoint("TOPLEFT", deleteButton, "TOPRIGHT", 50, 0);
+spamButton:SetPoint("TOPLEFT", deleteButton, "TOPRIGHT", 100, 0);
 
-spamButton:SetSize(100, 20)
+spamButton:SetSize(130, 20)
 spamButton:SetText("Start spamming")
 function AddonNS.updateSpamButtonText()
     spamButton:SetText(AddonNS.db.spam and "Stop spamming" or "Start spamming")
