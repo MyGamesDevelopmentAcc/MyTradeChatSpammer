@@ -3,6 +3,8 @@
         "SlashCmdList",
         "ChatFrame1EditBox",
         "UIParentLoadAddOn",
-        "EventTrace"
+        "EventTrace",
+        "EasyMenu",
+        "UIDropDownMenu_Refresh"
     ]
 }

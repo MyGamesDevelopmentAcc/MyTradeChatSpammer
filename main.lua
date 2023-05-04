@@ -1,11 +1,11 @@
 local addonName, AddonNS = ...
 
 AddonNS.db.singles = {};
-AddonNS.db.groups = {};
+AddonNS.db.spam = false;
 _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
 
--- /mtcs record MY_SUPER_ID1 WTS super cost thingy
+
 -- /mtcs r -- records with random id 
 -- [not yet implemented] /mtcs play MY_SUPER_ID1 say|trade
 -- [not yet implemented] /mtcs play MY_SUPER_ID1
@@ -13,6 +13,11 @@ _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 -- [not yet implemented] /mtcs clear ID
 -- [not yet implemented] /mtcs clearall
 -- [not yet implemented] /mtcs print (optional)ID --if ID not provided, prints all recorded messages
+
+-- /mtcs r -- records with random id 
+-- /mtcs record MY_SUPER_ID1 WTS super cost thingy
+-- /mtcs spam -- enable and disable spmming
+-- /mtcs delete ID -- removes given Id
 
 local commands = {};
 local function getRecordsAsList()
@@ -24,12 +29,23 @@ local function getRecordsAsList()
 end
 
 local function record(id, txt)
-	print(id)
-	print(txt)
+	if not id or id and #id ==0 then
+		id = "#"..(#getRecordsAsList() + 1);
+	end
 	AddonNS.db.singles[id] = txt;
 end
+local function delete(id)
+	AddonNS.db.singles[id] = nil;
+end
+AddonNS.record=record;
+AddonNS.delete=delete;
+
 _G["MTCS_API_Record"] = record;
 commands["r"] = function(txt)
+	record(nil, txt)
+end
+
+commands["delete"] = function(txt)
 	local id = "#"..(#getRecordsAsList() + 1);
 	record(id, txt)
 end
@@ -41,7 +57,6 @@ commands["record"] = function(txt)
 end
 
 local play = 1;
-local spam = true;
 local function getRecordsAsList()
 	local singlesPlaylist={}
 	for i, v in pairs(AddonNS.db.singles) do
@@ -71,11 +86,13 @@ commands["play"] = function(txt)
 	end
 end
 commands["print"] = function(txt)
+	print("---")
 	print(txt)
-	if (txt:find(" ")) then
-		local id = txt:sub(1, txt:find(" ") - 1);
+	print("---")
+	if (#txt>0) then
+		local id = txt;
 		print(id, AddonNS.db.singles[id])
-		ChatFrame1EditBox:SetText("/mtcs record " .. id .. " " .. AddonNS.db.singles[id])
+		
 	else
 		for i, v in pairs(AddonNS.db.singles) do
 			print(i, v)
@@ -113,7 +130,6 @@ local function sendMessage(...)
 	end
 end
 
---scheduleFrame:SetFrameStrata("TOOLTIP")
 scheduleFrame:EnableKeyboard(true)
 scheduleFrame:SetPropagateKeyboardInput(true)
 scheduleFrame:SetScript("OnKeyDown", sendMessage)
@@ -157,23 +173,25 @@ local function disableSpamming()
 end
 
 local function UpdateSpammer()
-	print("UpdateSpammer", spam, spammingActive, isOnTradeChat())
-	if spam and not spammingActive and isOnTradeChat() then
+	print("UpdateSpammer", AddonNS.db.spam, spammingActive, isOnTradeChat())
+	if AddonNS.db.spam and not spammingActive and isOnTradeChat() then
 		enableSpamming()
-	elseif (spammingActive and (not spam or not isOnTradeChat())) then
+	elseif (spammingActive and (not AddonNS.db.spam or not isOnTradeChat())) then
 		disableSpamming();
 	end
 end
-
-commands["spam"] = function(txt)
-	if (spam) then
-		spam = false;
+function AddonNS.toggleSpamming()
+	if (AddonNS.db.spam) then
+		AddonNS.db.spam = false;
 		print("disabling spamming");
 	else
-		spam = true;
+		AddonNS.db.spam = true;
 		print("enabling spamming");
 	end
 	UpdateSpammer();
+end
+commands["spam"] = function()
+	AddonNS.toggleSpamming()
 end
 
 AddonNS.events:RegisterEvent("CHANNEL_UI_UPDATE",UpdateSpammer) 

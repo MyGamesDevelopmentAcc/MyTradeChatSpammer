@@ -3,6 +3,8 @@
 ## DefaultState: Enabled
 ## Version: 10.1.0-1.1
 ## SavedVariablesPerCharacter: MyTradeChatSpammerDB
+## AddonCompartmentFunc: MyTradeChatSpammer_MinimapOnClick
 common/events.lua
 common/db.lua
 main.lua
+gui.lua
