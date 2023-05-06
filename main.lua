@@ -2,6 +2,8 @@ local addonName, AddonNS = ...
 
 AddonNS.db.singles = {};
 AddonNS.db.spam = false;
+AddonNS.db.play = 1;
+local minLoopTime = 30; -- minmal can be set to 15 but it then spams a lot
 _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
 
@@ -30,7 +32,9 @@ end
 
 local function record(id, txt)
 	if not id or id and #id ==0 then
-		id = "#"..(#getRecordsAsList() + 1);
+		local i =#getRecordsAsList()
+		id = "#"..i;
+		while AddonNS.db.singles["#"..i] do i=i+1 id = "#"..i end
 	end
 	AddonNS.db.singles[id] = txt;
 end
@@ -46,8 +50,7 @@ commands["r"] = function(txt)
 end
 
 commands["delete"] = function(txt)
-	local id = "#"..(#getRecordsAsList() + 1);
-	record(id, txt)
+	delete(txt);
 end
 
 commands["record"] = function(txt)
@@ -56,7 +59,6 @@ commands["record"] = function(txt)
 	record(id, txt)
 end
 
-local play = 1;
 local function getRecordsAsList()
 	local singlesPlaylist={}
 	for i, v in pairs(AddonNS.db.singles) do
@@ -68,9 +70,9 @@ end
 local function playNext(where)
 	local singlesPlaylist = getRecordsAsList();
 	if (#singlesPlaylist >0) then
-		play = play > #singlesPlaylist and 1 or play;
-		SendChatMessage(singlesPlaylist[play], where, nil, 2);
-		play = play + 1;
+		AddonNS.db.play = AddonNS.db.play > #singlesPlaylist and 1 or AddonNS.db.play;
+		SendChatMessage(singlesPlaylist[AddonNS.db.play], where, nil, 2);
+		AddonNS.db.play = AddonNS.db.play + 1;
 	end
 end
 
@@ -154,7 +156,7 @@ local function enableSpamming()
 			if (spammingActive) then -- to prevent from reactivating the loop when dispatching a message			print("Looping yo!", GetTime())
 				
 				--print("scheduling timer")
-				timer = C_Timer.NewTimer(15, spamLoop);
+				timer = C_Timer.NewTimer(minLoopTime, spamLoop);
 			end
 		end
 		scheduleNextMessage(callback);
@@ -173,7 +175,7 @@ local function disableSpamming()
 end
 
 local function UpdateSpammer()
-	print("UpdateSpammer", AddonNS.db.spam, spammingActive, isOnTradeChat())
+	--print("UpdateSpammer", AddonNS.db.spam, spammingActive, isOnTradeChat())
 	if AddonNS.db.spam and not spammingActive and isOnTradeChat() then
 		enableSpamming()
 	elseif (spammingActive and (not AddonNS.db.spam or not isOnTradeChat())) then

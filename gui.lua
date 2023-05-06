@@ -143,10 +143,10 @@ end
 containerFrame.textScrollFrame = createEditBox(containerFrame, 25, 40, 60)
 
 hooksecurefunc("ChatEdit_InsertLink", function(link)
-    if (containerFrame.textScrollFrame.EditBox:HasFocus()) then
+    --if (containerFrame.textScrollFrame.EditBox:HasFocus()) then
         containerFrame.textScrollFrame.EditBox:Insert(link)
-        containerFrame.idBox:Insert(link)
-    end
+        print("called")
+   -- end
 end)
 
 
