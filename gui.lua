@@ -142,11 +142,8 @@ local function createEditBox(frame, posX, posY, height)
 end
 containerFrame.textScrollFrame = createEditBox(containerFrame, 25, 40, 60)
 
-hooksecurefunc("ChatEdit_InsertLink", function(link)
-    --if (containerFrame.textScrollFrame.EditBox:HasFocus()) then
-        containerFrame.textScrollFrame.EditBox:Insert(link)
-        print("called")
-   -- end
+hooksecurefunc("SetItemRef", function(link, text, button)
+    containerFrame.textScrollFrame.EditBox:Insert(text)
 end)
 
 
@@ -160,21 +157,9 @@ do
     containerFrame.idBox = CreateFrame("EditBox", nil, containerFrame, "InputBoxInstructionsTemplate")
     local idBox = containerFrame.idBox
     idBox:SetPoint('TOPLEFT', fontString, 'TOPRIGHT', 5, 4)
-
     idBox:SetHeight(20);
     idBox:SetWidth(100);
-
-    --idBox:SetMaxLetters(0);
     idBox:SetAutoFocus(false);
-    -- idBox:SetScript("OnEscapePressed", function(self)
-    --     EditBox_ClearFocus(self);
-    -- end)
-    -- idBox:SetScript("OnMouseDown", function(self)
-    --     self:();
-    -- end)
-    -- idBox.HasStickyFocus = function()
-    --     return DoesAncestryInclude(idBox, GetMouseFocus());
-    -- end
 end
 
 --- [[ save button]]
@@ -209,7 +194,7 @@ spamButton:SetSize(130, 20)
 spamButton:SetText("Start spamming")
 function AddonNS.updateSpamButtonText()
     spamButton:SetText(AddonNS.db.spam and "Stop spamming" or "Start spamming")
-    print(AddonNS.db.spam and "Stop spamming" or "Start spamming",AddonNS.db.spam)
+    print(AddonNS.db.spam and "Stop spamming" or "Start spamming", AddonNS.db.spam)
 end
 
 spamButton:SetScript("OnClick", function(self, button)

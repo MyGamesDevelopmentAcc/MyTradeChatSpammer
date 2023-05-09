@@ -1,14 +1,28 @@
 local addonName, AddonNS = ...
 
+-- events
+AddonNS.events = {};
+LibStub("MyLibrary_Events").embed(AddonNS.events);
+
+-- DB
+
+AddonNS.db = {};
 AddonNS.db.singles = {};
 AddonNS.db.spam = false;
 AddonNS.db.play = 1;
+AddonNS.init = function(db)
+	AddonNS.db = db;
+	AddonNS.db.play = AddonNS.db.play or 1;
+	AddonNS.db.singles = AddonNS.db.singles or {};
+	AddonNS.db.spam =  AddonNS.db.spam or false;
+end
+LibStub("MyLibrary_DB").asyncLoad("MyTradeChatSpammerDB", AddonNS.init);
 local minLoopTime = 30; -- minmal can be set to 15 but it then spams a lot
 _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
 
 
--- /mtcs r -- records with random id 
+-- /mtcs r -- records with random id
 -- [not yet implemented] /mtcs play MY_SUPER_ID1 say|trade
 -- [not yet implemented] /mtcs play MY_SUPER_ID1
 -- [not yet implemented] /mtcs playnext MY_SUPERGROUP_ID1 say|trade
@@ -16,14 +30,14 @@ _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 -- [not yet implemented] /mtcs clearall
 -- [not yet implemented] /mtcs print (optional)ID --if ID not provided, prints all recorded messages
 
--- /mtcs r -- records with random id 
+-- /mtcs r -- records with random id
 -- /mtcs record MY_SUPER_ID1 WTS super cost thingy
 -- /mtcs spam -- enable and disable spmming
 -- /mtcs delete ID -- removes given Id
 
 local commands = {};
 local function getRecordsAsList()
-	local singlesPlaylist={}
+	local singlesPlaylist = {}
 	for i, v in pairs(AddonNS.db.singles) do
 		table.insert(singlesPlaylist, v);
 	end
@@ -31,18 +45,21 @@ local function getRecordsAsList()
 end
 
 local function record(id, txt)
-	if not id or id and #id ==0 then
-		local i =#getRecordsAsList()
-		id = "#"..i;
-		while AddonNS.db.singles["#"..i] do i=i+1 id = "#"..i end
+	if not id or id and #id == 0 then
+		local i = #getRecordsAsList()
+		id = "#" .. i;
+		while AddonNS.db.singles["#" .. i] do
+			i = i + 1
+			id = "#" .. i
+		end
 	end
 	AddonNS.db.singles[id] = txt;
 end
 local function delete(id)
 	AddonNS.db.singles[id] = nil;
 end
-AddonNS.record=record;
-AddonNS.delete=delete;
+AddonNS.record = record;
+AddonNS.delete = delete;
 
 _G["MTCS_API_Record"] = record;
 commands["r"] = function(txt)
@@ -60,7 +77,7 @@ commands["record"] = function(txt)
 end
 
 local function getRecordsAsList()
-	local singlesPlaylist={}
+	local singlesPlaylist = {}
 	for i, v in pairs(AddonNS.db.singles) do
 		table.insert(singlesPlaylist, v);
 	end
@@ -69,7 +86,7 @@ end
 
 local function playNext(where)
 	local singlesPlaylist = getRecordsAsList();
-	if (#singlesPlaylist >0) then
+	if (#singlesPlaylist > 0) then
 		AddonNS.db.play = AddonNS.db.play > #singlesPlaylist and 1 or AddonNS.db.play;
 		SendChatMessage(singlesPlaylist[AddonNS.db.play], where, nil, 2);
 		AddonNS.db.play = AddonNS.db.play + 1;
@@ -91,10 +108,9 @@ commands["print"] = function(txt)
 	print("---")
 	print(txt)
 	print("---")
-	if (#txt>0) then
+	if (#txt > 0) then
 		local id = txt;
 		print(id, AddonNS.db.singles[id])
-		
 	else
 		for i, v in pairs(AddonNS.db.singles) do
 			print(i, v)
@@ -118,14 +134,15 @@ end
 local scheduleFrame = CreateFrame("Frame")
 local sendCallback = nil;
 local function sendMessage(...)
-	if(sendCallback) then
+	if (sendCallback) then
 		-- print("clicked")
 		-- print(...)
 		scheduleFrame:Hide()
 		playNext("CHANNEL");
-		sendMessage = function() end
+		sendMessage = function()
+		end
 		sendCallback()
-		sendCallback=nil;
+		sendCallback = nil;
 	else
 		print("clicked but not scheduled")
 		-- print(...)
@@ -140,7 +157,7 @@ scheduleFrame:Hide()
 local function scheduleNextMessage(callback)
 	--print("scheduling next message")
 	sendCallback = callback;
-	
+
 	scheduleFrame:Show()
 end
 
@@ -154,7 +171,6 @@ local function enableSpamming()
 			--print("callback triggered")
 
 			if (spammingActive) then -- to prevent from reactivating the loop when dispatching a message			print("Looping yo!", GetTime())
-				
 				--print("scheduling timer")
 				timer = C_Timer.NewTimer(minLoopTime, spamLoop);
 			end
@@ -166,7 +182,6 @@ local function enableSpamming()
 end
 
 local function disableSpamming()
-
 	--print("disabling spamming")
 	spammingActive = false;
 	if (timer) then
@@ -192,9 +207,10 @@ function AddonNS.toggleSpamming()
 	end
 	UpdateSpammer();
 end
+
 commands["spam"] = function()
 	AddonNS.toggleSpamming()
 end
 
-AddonNS.events:RegisterEvent("CHANNEL_UI_UPDATE",UpdateSpammer) 
-AddonNS.events:RegisterEvent("PLAYER_ENTERING_WORLD",UpdateSpammer)
+AddonNS.events:RegisterEvent("CHANNEL_UI_UPDATE", UpdateSpammer)
+AddonNS.events:RegisterEvent("PLAYER_ENTERING_WORLD", UpdateSpammer)
