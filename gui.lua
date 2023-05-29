@@ -43,7 +43,7 @@ do
             columns = { {
                 id = "id",
                 name = "Id",
-                width = 40,
+                width = 100,
                 sortFunction = function(a, b)
                     return a < b
                 end,
@@ -53,7 +53,7 @@ do
             }, {
                 id = "Message",
                 name = "Message",
-                width = 690,
+                width = 630,
                 sortFunction = nil,
                 displayFunction = nil,
                 textureDisplayFunction = nil,
