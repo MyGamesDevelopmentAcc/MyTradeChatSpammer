@@ -17,10 +17,12 @@ AddonNS.init = function(db)
 	AddonNS.db.spam =  AddonNS.db.spam or false;
 end
 LibStub("MyLibrary_DB").asyncLoad("MyTradeChatSpammerDB", AddonNS.init);
-local minLoopTime = 30; -- minmal can be set to 15 but it then spams a lot
 _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
-
+-- CONFIG
+local maxWaitSpamTime = 120; -- maximal to send regardless
+local minLoopTime = 30; -- minmal can be set to 15 but it then spams a lot
+local minReqMessagesInBetween = 3;
 
 -- /mtcs r -- records with random id
 -- [not yet implemented] /mtcs play MY_SUPER_ID1 say|trade
@@ -105,9 +107,9 @@ commands["play"] = function(txt)
 	end
 end
 commands["print"] = function(txt)
-	print("---")
-	print(txt)
-	print("---")
+	--print("---")
+	--print(txt)
+	--print("---")
 	if (#txt > 0) then
 		local id = txt;
 		print(id, AddonNS.db.singles[id])
@@ -118,7 +120,7 @@ commands["print"] = function(txt)
 	end
 end
 SlashCmdList[addonName .. "SlashCommand"] = function(msg)
-	print(msg)
+	--print(msg)
 	local searchTill = msg:find(" ");
 	searchTill = searchTill and (searchTill - 1);
 	local cmd = msg:sub(1, searchTill);
@@ -130,21 +132,41 @@ local function isOnTradeChat()
 	return GetChannelName((GetChannelName("Trade - City"))) > 0
 end
 
+local msgCounter = 0;
 
+local unitName, server = UnitFullName("player")
+local selfName = unitName.."-"..server;
+
+local function CountMessages(eventName, text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, languageID, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
+	msgCounter = msgCounter + ("Trade - City" == channelBaseName and playerName ~= selfName and 1 or 0);
+	--print( selfName,playerName, msgCounter);
+end
+
+local function ResetMessageCounter()
+	--print("reseting counter")
+	msgCounter=0;
+end
+
+local lastSpamTime = 0;
 local scheduleFrame = CreateFrame("Frame")
 local sendCallback = nil;
 local function sendMessage(...)
-	if (sendCallback) then
+	if (sendCallback and (msgCounter >= minReqMessagesInBetween or time() - lastSpamTime > maxWaitSpamTime)) then
+		--print ("wait time: ", time() - lastSpamTime);
+		lastSpamTime = time();
 		-- print("clicked")
 		-- print(...)
 		scheduleFrame:Hide()
 		playNext("CHANNEL");
-		sendMessage = function()
-		end
+		-- sendMessage = function()
+		-- end
 		sendCallback()
 		sendCallback = nil;
+		ResetMessageCounter()
+	elseif (msgCounter <minReqMessagesInBetween) then
+		--print("Ignoring as counter is: ", msgCounter, " and timer is ", time() - lastSpamTime);
 	else
-		print("clicked but not scheduled")
+		--print("clicked but not scheduled")
 		-- print(...)
 	end
 end
@@ -162,7 +184,15 @@ local function scheduleNextMessage(callback)
 end
 
 local timer
+
+
+
+
+
+
 local function enableSpamming()
+	msgCounter=minReqMessagesInBetween; -- to allow first message to go through;
+	AddonNS.events:RegisterEvent("CHAT_MSG_CHANNEL", CountMessages)
 	--print("enabling spamming")
 	spammingActive = true;
 	local function spamLoop()
@@ -182,11 +212,14 @@ local function enableSpamming()
 end
 
 local function disableSpamming()
+	AddonNS.events:UnregisterEvent("CHAT_MSG_CHANNEL")
 	--print("disabling spamming")
 	spammingActive = false;
 	if (timer) then
 		timer:Cancel();
 	end
+	sendCallback = nil;
+	scheduleFrame:Hide();
 end
 
 local function UpdateSpammer()
@@ -214,3 +247,4 @@ end
 
 AddonNS.events:RegisterEvent("CHANNEL_UI_UPDATE", UpdateSpammer)
 AddonNS.events:RegisterEvent("PLAYER_ENTERING_WORLD", UpdateSpammer)
+

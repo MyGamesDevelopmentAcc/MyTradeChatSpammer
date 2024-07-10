@@ -5,6 +5,7 @@
         "UIParentLoadAddOn",
         "EventTrace",
         "EasyMenu",
-        "UIDropDownMenu_Refresh"
+        "UIDropDownMenu_Refresh",
+        "InputScrollFrame_OnLoad"
     ]
 }
