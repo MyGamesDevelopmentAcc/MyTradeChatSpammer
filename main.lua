@@ -2,7 +2,6 @@ local addonName, AddonNS = ...
 
 -- [[ Constants ]]
 local DB_NAME = "MyTradeChatSpammerDB"
-local TRADE_CHANNEL_NAME = "Trade - City"
 
 local MAX_LOOP_WAIT_TIME_BETWEEN_MESSAGES = 120
 local MIN_LOOP_WAIT_TIME_BETWEEN_MESSAGES = 30
@@ -15,6 +14,15 @@ LibStub("MyLibrary_Events").embed(AddonNS.events)
 
 local function addonPrint(...)
 	print(ADDON_CHAT_PREFIX .. ":|cffaaaaff", ...,"|r")
+end
+
+local function getTradeChannelId()
+	local tradeChannelName = TRADE or "Trade"
+	local tradeChannelId = GetChannelName(tradeChannelName)
+	if tradeChannelId and tradeChannelId > 0 then
+		return tradeChannelId
+	end
+	return nil
 end
 
 -- [[ Database ]]
@@ -62,6 +70,22 @@ local function deleteMessage(id)
 end
 AddonNS.delete = deleteMessage
 
+local function sendMessageToTarget(message, where)
+	where = string.upper(where or "CHANNEL")
+	if where == "CHANNEL" then
+		local tradeChannelId = getTradeChannelId()
+		if tradeChannelId then
+			C_ChatInfo.SendChatMessage(message, where, nil, tradeChannelId)
+			return true
+		end
+		addonPrint("Cannot send to Trade channel: not joined.")
+		return false
+	end
+
+	C_ChatInfo.SendChatMessage(message, where, nil)
+	return true
+end
+
 local function sendNextMessage(where)
 	local singlesPlaylist = getRecordsAsList()
 	if #singlesPlaylist == 0 then
@@ -69,7 +93,9 @@ local function sendNextMessage(where)
 	end
 
 	AddonNS.db.play = AddonNS.db.play > #singlesPlaylist and 1 or AddonNS.db.play
-	C_ChatInfo.SendChatMessage(singlesPlaylist[AddonNS.db.play], where, nil, 2)
+	if not sendMessageToTarget(singlesPlaylist[AddonNS.db.play], where) then
+		return
+	end
 	AddonNS.db.play = AddonNS.db.play + 1
 end
 
@@ -80,7 +106,7 @@ local function sendById(id, where)
 		return
 	end
 
-	C_ChatInfo.SendChatMessage(message, where, nil, 2)
+	sendMessageToTarget(message, where)
 end
 
 -- [[ Slash Command Helpers ]]
@@ -200,7 +226,7 @@ local timer
 local scheduleFrame = CreateFrame("Frame")
 
 local function isOnTradeChat()
-	return GetChannelName(GetChannelName(TRADE_CHANNEL_NAME)) > 0
+	return GetChannelName(GetChannelName(TRADE)) > 0
 end
 
 local function getSelfName()
@@ -214,8 +240,9 @@ local function getSelfName()
 	return selfName
 end
 
-local function countTradeMessages(_, _, playerName, _, _, _, _, _, _, channelBaseName)
-	msgCounter = msgCounter + ((channelBaseName == TRADE_CHANNEL_NAME and playerName ~= getSelfName()) and 1 or 0)
+local function countTradeMessages(_, _, playerName, _, _, _, _, _, channelIndex)
+	local tradeChannelId = getTradeChannelId()
+	msgCounter = msgCounter + ((tradeChannelId and channelIndex == tradeChannelId and playerName ~= getSelfName()) and 1 or 0)
 end
 
 local function resetMessageCounter()
