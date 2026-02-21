@@ -50,26 +50,9 @@ Base command: `/mtcs`
   - spam is enabled
   - you are currently in `Trade - City`
 - On enable, it allows one immediate post by setting the message counter to the threshold.
-- After each send, it waits at least `15s` before scheduling the next send attempt.
-- A send attempt succeeds when either condition is true:
-  - at least `5` Trade messages from other players were seen since your last send
-  - or `120s` have passed since your last send
-- This means:
-  - `15s` is the minimum spacing between your messages
-  - `120s` is the maximum wait cap when Trade chat is too quiet to hit the `5 messages` condition
-- The send check is driven by the frame key-down handler in current code, so user keyboard activity can affect when a scheduled attempt actually fires.
-
-## Troubleshooting
-
-- If nothing is posting:
-  - Make sure you are in `Trade - City`.
-  - Ensure spam mode is enabled.
-  - Try typing/pressing keys after enabling spam mode.
-- If the UI does not open:
-  - Verify required dependencies are installed and enabled.
-- If slash commands error:
-  - Recheck command format and required arguments.
+- After each send it counts the number of messages other players have posted as well as waits not to overspam the trade channel with messages.
+- The messages are sent only when you actively play the game, ie. press buttons.
 
 ## License
 
-See `LICENSE`.
+See `LICENSE.md`.
