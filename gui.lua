@@ -203,7 +203,6 @@ spamButton:SetSize(130, 20)
 spamButton:SetText("Start spamming")
 function AddonNS.updateSpamButtonText()
     spamButton:SetText(AddonNS.db.spam and "Stop spamming" or "Start spamming")
-    print(AddonNS.db.spam and "Stop spamming" or "Start spamming", AddonNS.db.spam)
 end
 
 spamButton:SetScript("OnClick", function(self, button)

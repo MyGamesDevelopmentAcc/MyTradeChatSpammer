@@ -7,10 +7,15 @@ local TRADE_CHANNEL_NAME = "Trade - City"
 local MAX_LOOP_WAIT_TIME_BETWEEN_MESSAGES = 120
 local MIN_LOOP_WAIT_TIME_BETWEEN_MESSAGES = 30
 local MIN_REQUESTES_IN_BETWEEN_MESSAGES = 5
+local ADDON_CHAT_PREFIX = "|cffff2459My|r|cffffffffTradeChatSpammer|r"
 
 -- [[ Dependencies ]]
 AddonNS.events = {}
 LibStub("MyLibrary_Events").embed(AddonNS.events)
+
+local function addonPrint(...)
+	print(ADDON_CHAT_PREFIX .. ":|cffaaaaff", ...)
+end
 
 -- [[ Database ]]
 AddonNS.db = {
@@ -71,7 +76,7 @@ end
 local function sendById(id, where)
 	local message = AddonNS.db.singles[id]
 	if (not message) or #message == 0 then
-		print("No message found for id:", id)
+		addonPrint("No message found for id:", id)
 		return
 	end
 
@@ -84,18 +89,18 @@ local function trim(text)
 end
 
 local function printUsage(usage)
-	print("Usage: " .. usage)
+	addonPrint("Usage: " .. usage)
 end
 
 local function printHelp()
-	print("MyTradeChatSpammer commands:")
-	print("/mtcs help")
-	print("/mtcs r <message>")
-	print("/mtcs record <id> <message>")
-	print("/mtcs delete <id>")
-	print("/mtcs print [id]")
-	print("/mtcs send [id] [chatType]")
-	print("/mtcs toggle")
+	addonPrint("Commands:")
+	addonPrint("/mtcs help")
+	addonPrint("/mtcs r <message>")
+	addonPrint("/mtcs record <id> <message>")
+	addonPrint("/mtcs delete <id>")
+	addonPrint("/mtcs print [id]")
+	addonPrint("/mtcs send [id] [chatType]")
+	addonPrint("/mtcs toggle")
 end
 
 local function parseSlashInput(message)
@@ -176,7 +181,7 @@ SlashCmdList[addonName .. "SlashCommand"] = function(message)
 
 	local handler = commands[cmd]
 	if not handler then
-		print("Unknown command:", cmd)
+		addonPrint("Unknown command:", cmd)
 		commands.help()
 		return
 	end
@@ -276,10 +281,10 @@ end
 function AddonNS.toggleSpamming()
 	if AddonNS.db.spam then
 		AddonNS.db.spam = false
-		print("disabling spamming")
+		addonPrint("disabled chat spamming")
 	else
 		AddonNS.db.spam = true
-		print("enabling spamming")
+		addonPrint("enabled chat spamming")
 	end
 	updateSpammerState()
 end
