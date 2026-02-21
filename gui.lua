@@ -156,6 +156,18 @@ do
     end
 end
 
+-- Some link types (e.g. achievements/professions) use ChatEdit_InsertLink directly.
+do
+    local originalChatEditInsertLink = ChatFrameUtil.InsertLink
+    function ChatFrameUtil.InsertLink(link)
+        if link and self.mainFrame:IsShown() and messageEditBox:HasFocus() then
+            messageEditBox:Insert(link)
+            return true
+        end
+        return originalChatEditInsertLink(link)
+    end
+end
+
 
 
 
