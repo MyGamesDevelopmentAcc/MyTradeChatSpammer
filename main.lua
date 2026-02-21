@@ -14,7 +14,7 @@ AddonNS.events = {}
 LibStub("MyLibrary_Events").embed(AddonNS.events)
 
 local function addonPrint(...)
-	print(ADDON_CHAT_PREFIX .. ":|cffaaaaff", ...)
+	print(ADDON_CHAT_PREFIX .. ":|cffaaaaff", ...,"|r")
 end
 
 -- [[ Database ]]

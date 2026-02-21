@@ -147,7 +147,8 @@ local messageEditBox = containerFrame.textScrollFrame.EditBox
 do
     local originalHandleModifiedItemClick = HandleModifiedItemClick
     function HandleModifiedItemClick(link, itemLocation)
-        if self.mainFrame:IsShown() and messageEditBox:HasFocus() and IsModifiedClick("CHATLINK") then
+        
+        if link and self.mainFrame:IsShown() and messageEditBox:HasFocus() and IsModifiedClick("CHATLINK") then
             messageEditBox:Insert(link)
             return true
         end
