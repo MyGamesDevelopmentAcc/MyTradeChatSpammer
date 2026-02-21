@@ -1,262 +1,255 @@
 local addonName, AddonNS = ...
 
--- events
-AddonNS.events = {};
-LibStub("MyLibrary_Events").embed(AddonNS.events);
+-- [[ Constants ]]
+local DB_NAME = "MyTradeChatSpammerDB"
+local TRADE_CHANNEL_NAME = "Trade - City"
 
--- DB
+local MAX_LOOP_WAIT_TIME_BETWEEN_MESSAGES = 120
+local MIN_LOOP_WAIT_TIME_BETWEEN_MESSAGES = 30
+local MIN_REQUESTES_IN_BETWEEN_MESSAGES = 5
 
-AddonNS.db = {};
-AddonNS.db.singles = {};
-AddonNS.db.spam = false;
-AddonNS.db.play = 1;
-AddonNS.init = function(db)
-	AddonNS.db = db;
-	AddonNS.db.play = AddonNS.db.play or 1;
-	AddonNS.db.singles = AddonNS.db.singles or {};
-	AddonNS.db.spam = AddonNS.db.spam or false;
+-- [[ Dependencies ]]
+AddonNS.events = {}
+LibStub("MyLibrary_Events").embed(AddonNS.events)
+
+-- [[ Database ]]
+AddonNS.db = {
+	singles = {},
+	spam = false,
+	play = 1,
+}
+
+local function initDb(db)
+	AddonNS.db = db
+	AddonNS.db.play = AddonNS.db.play or 1
+	AddonNS.db.singles = AddonNS.db.singles or {}
+	AddonNS.db.spam = AddonNS.db.spam or false
 end
-LibStub("MyLibrary_DB").asyncLoad("MyTradeChatSpammerDB", AddonNS.init);
-_G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
--- CONFIG
-local maxWaitSpamTime = 120; -- maximal to send regardless
-local minLoopTime = 15;      -- minmal can be set to 15 but it then spams a lot
-local minReqMessagesInBetween = 5;
+AddonNS.init = initDb
+LibStub("MyLibrary_DB").asyncLoad(DB_NAME, AddonNS.init)
 
--- /mtcs r -- records with random id
--- [not yet implemented] /mtcs send MY_SUPER_ID1 say|trade
--- [not yet implemented] /mtcs send MY_SUPER_ID1
--- [not yet implemented] /mtcs sendnext MY_SUPERGROUP_ID1 say|trade
--- [not yet implemented] /mtcs clear ID
--- [not yet implemented] /mtcs clearall
--- [not yet implemented] /mtcs print (optional)ID --if ID not provided, prints all recorded messages
-
--- /mtcs r -- records with random id
--- /mtcs record MY_SUPER_ID1 WTS super cost thingy
--- /mtcs toggle -- enable and disable spmming
--- /mtcs delete ID -- removes given Id
-
-local commands = {};
+-- [[ Message Store Helpers ]]
 local function getRecordsAsList()
 	local singlesPlaylist = {}
-	for i, v in pairs(AddonNS.db.singles) do
-		table.insert(singlesPlaylist, v);
+	for _, message in pairs(AddonNS.db.singles) do
+		table.insert(singlesPlaylist, message)
 	end
-	return singlesPlaylist;
-end
-local function trim(txt)
-	return txt and txt:match("^%s*(.-)%s*$") or "";
+	return singlesPlaylist
 end
 
-local function record(id, txt)
-	if not id or id and #id == 0 then
+local function recordMessage(id, text)
+	if (not id) or #id == 0 then
 		local i = #getRecordsAsList()
-		id = "#" .. i;
+		id = "#" .. i
 		while AddonNS.db.singles["#" .. i] do
 			i = i + 1
 			id = "#" .. i
 		end
 	end
-	AddonNS.db.singles[id] = txt;
-end
-local function delete(id)
-	AddonNS.db.singles[id] = nil;
-end
-AddonNS.record = record;
-AddonNS.delete = delete;
 
-_G["MTCS_API_Record"] = record;
-commands["r"] = function(txt)
-	txt = trim(txt);
-	if (#txt == 0) then
-		print("Usage: /mtcs r <message>");
-		return;
-	end
-	record(nil, txt)
+	AddonNS.db.singles[id] = text
 end
+AddonNS.record = recordMessage
 
-commands["delete"] = function(txt)
-	txt = trim(txt);
-	if (#txt == 0) then
-		print("Usage: /mtcs delete <id>");
-		return;
-	end
-	delete(txt);
+local function deleteMessage(id)
+	AddonNS.db.singles[id] = nil
 end
+AddonNS.delete = deleteMessage
 
-commands["record"] = function(txt)
-	txt = trim(txt);
-	local id, message = txt:match("^(%S+)%s+(.+)$");
-	if (not id or not message) then
-		print("Usage: /mtcs record <id> <message>");
-		return;
+local function sendNextMessage(where)
+	local singlesPlaylist = getRecordsAsList()
+	if #singlesPlaylist == 0 then
+		return
 	end
-	record(id, message)
-end
 
-local function playNext(where)
-	local singlesPlaylist = getRecordsAsList();
-	if (#singlesPlaylist > 0) then
-		AddonNS.db.play = AddonNS.db.play > #singlesPlaylist and 1 or AddonNS.db.play;
-		SendChatMessage(singlesPlaylist[AddonNS.db.play], where, nil, 2);
-		AddonNS.db.play = AddonNS.db.play + 1;
-	end
+	AddonNS.db.play = AddonNS.db.play > #singlesPlaylist and 1 or AddonNS.db.play
+	C_ChatInfo.SendChatMessage(singlesPlaylist[AddonNS.db.play], where, nil, 2)
+	AddonNS.db.play = AddonNS.db.play + 1
 end
 
 local function sendById(id, where)
-	local message = AddonNS.db.singles[id];
-	if (not message or #message == 0) then
-		print("No message found for id:", id);
-		return;
+	local message = AddonNS.db.singles[id]
+	if (not message) or #message == 0 then
+		print("No message found for id:", id)
+		return
 	end
-	SendChatMessage(message, where, nil, 2);
+
+	C_ChatInfo.SendChatMessage(message, where, nil, 2)
 end
 
-commands["send"] = function(txt)
-	local id, where = strsplit(" ", txt);
-	where = where or "channel";
-
-	if (id and #id > 0) then
-		sendById(id, where);
-	else
-		playNext(where)
-	end
+-- [[ Slash Command Helpers ]]
+local function trim(text)
+	return text and text:match("^%s*(.-)%s*$") or ""
 end
-commands["print"] = function(txt)
-	txt = trim(txt);
-	--print("---")
-	--print(txt)
-	--print("---")
-	if (#txt > 0) then
-		local id = txt;
-		print(id, AddonNS.db.singles[id])
-	else
-		for i, v in pairs(AddonNS.db.singles) do
-			print(i, v)
+
+local function printUsage(usage)
+	print("Usage: " .. usage)
+end
+
+local function printHelp()
+	print("MyTradeChatSpammer commands:")
+	print("/mtcs help")
+	print("/mtcs r <message>")
+	print("/mtcs record <id> <message>")
+	print("/mtcs delete <id>")
+	print("/mtcs print [id]")
+	print("/mtcs send [id] [chatType]")
+	print("/mtcs toggle")
+end
+
+local function parseSlashInput(message)
+	message = trim(message)
+	if #message == 0 then
+		return "", ""
+	end
+
+	local cmd, text = message:match("^(%S+)%s*(.-)$")
+	return string.lower(cmd or ""), text or ""
+end
+
+local commands = {
+	help = function()
+		printHelp()
+	end,
+	r = function(text)
+		text = trim(text)
+		if #text == 0 then
+			printUsage("/mtcs r <message>")
+			return
 		end
-	end
-end
-commands["help"] = function()
-	print("MyTradeChatSpammer commands:");
-	print("/mtcs help");
-	print("/mtcs r <message>");
-	print("/mtcs record <id> <message>");
-	print("/mtcs delete <id>");
-	print("/mtcs print [id]");
-	print("/mtcs send [id] [chatType]");
-	print("/mtcs toggle");
-end
-SlashCmdList[addonName .. "SlashCommand"] = function(msg)
-	msg = trim(msg);
-	if (#msg == 0) then
-		commands["help"]();
-		return;
+
+		recordMessage(nil, text)
+	end,
+	record = function(text)
+		text = trim(text)
+		local id, message = text:match("^(%S+)%s+(.+)$")
+		if (not id) or (not message) then
+			printUsage("/mtcs record <id> <message>")
+			return
+		end
+
+		recordMessage(id, message)
+	end,
+	delete = function(text)
+		text = trim(text)
+		if #text == 0 then
+			printUsage("/mtcs delete <id>")
+			return
+		end
+
+		deleteMessage(text)
+	end,
+	print = function(text)
+		text = trim(text)
+		if #text > 0 then
+			print(text, AddonNS.db.singles[text])
+			return
+		end
+
+		for id, message in pairs(AddonNS.db.singles) do
+			print(id, message)
+		end
+	end,
+	send = function(text)
+		local id, where = strsplit(" ", text)
+		where = where or "channel"
+
+		if id and #id > 0 then
+			sendById(id, where)
+		else
+			sendNextMessage(where)
+		end
+	end,
+	toggle = function()
+		AddonNS.toggleSpamming()
+	end,
+}
+
+_G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
+SlashCmdList[addonName .. "SlashCommand"] = function(message)
+	local cmd, text = parseSlashInput(message)
+	if #cmd == 0 then
+		commands.help()
+		return
 	end
 
-	local cmd, txt = msg:match("^(%S+)%s*(.-)$");
-	cmd = string.lower(cmd or "");
-	txt = txt or "";
-
-	local handler = commands[cmd];
-	if (not handler) then
-		print("Unknown command:", cmd);
-		commands["help"]();
-		return;
+	local handler = commands[cmd]
+	if not handler then
+		print("Unknown command:", cmd)
+		commands.help()
+		return
 	end
-	handler(txt);
+
+	handler(text)
 end
-local spammingActive = false;
+
+-- [[ Auto Spam Scheduler ]]
+local spammingActive = false
+local msgCounter = 0
+local selfName = nil
+local lastSpamTime = 0
+local sendCallback = nil
+local timer
+
+local scheduleFrame = CreateFrame("Frame")
+
 local function isOnTradeChat()
-	return GetChannelName((GetChannelName("Trade - City"))) > 0
+	return GetChannelName(GetChannelName(TRADE_CHANNEL_NAME)) > 0
 end
-
-local msgCounter = 0;
-
-local selfName = nil;
 
 local function getSelfName()
-	if (not selfName) then
+	if not selfName then
 		local unitName, server = UnitFullName("player")
-		if (not server) then
-			return "";
+		if not server then
+			return ""
 		end
-		selfName = unitName .. "-" .. server;
+		selfName = unitName .. "-" .. server
 	end
-	return selfName;
+	return selfName
 end
 
-local function CountMessages(eventName, text, playerName, languageName, channelName, playerName2, specialFlags,
-							 zoneChannelID, channelIndex, channelBaseName, languageID, lineID, guid, bnSenderID, isMobile,
-							 isSubtitle, hideSenderInLetterbox, supressRaidIcons)
-	msgCounter = msgCounter + ("Trade - City" == channelBaseName and playerName ~= getSelfName() and 1 or 0);
-	--print( selfName,playerName, msgCounter);
+local function countTradeMessages(_, _, playerName, _, _, _, _, _, _, channelBaseName)
+	msgCounter = msgCounter + ((channelBaseName == TRADE_CHANNEL_NAME and playerName ~= getSelfName()) and 1 or 0)
 end
 
-local function ResetMessageCounter()
-	--print("reseting counter")
-	msgCounter = 0;
+local function resetMessageCounter()
+	msgCounter = 0
 end
 
-local lastSpamTime = 0;
-local scheduleFrame = CreateFrame("Frame")
-local sendCallback = nil;
-local function sendMessage(...)
-	if (sendCallback and (msgCounter >= minReqMessagesInBetween or time() - lastSpamTime > maxWaitSpamTime)) then
-		--print ("wait time: ", time() - lastSpamTime);
-		lastSpamTime = time();
-		-- print("clicked")
-		-- print(...)
+local function tryDispatchScheduledMessage()
+	if sendCallback and (msgCounter >= MIN_REQUESTES_IN_BETWEEN_MESSAGES or time() - lastSpamTime > MAX_LOOP_WAIT_TIME_BETWEEN_MESSAGES) then
+		lastSpamTime = time()
 		scheduleFrame:Hide()
-		playNext("CHANNEL");
-		-- sendMessage = function()
-		-- end
+		sendNextMessage("CHANNEL")
 		sendCallback()
-		sendCallback = nil;
-		ResetMessageCounter()
-	elseif (msgCounter < minReqMessagesInBetween) then
-		--print("Ignoring as counter is: ", msgCounter, " and timer is ", time() - lastSpamTime);
-	else
-		--print("clicked but not scheduled")
-		-- print(...)
+		sendCallback = nil
+		resetMessageCounter()
 	end
 end
 
 scheduleFrame:EnableKeyboard(true)
 scheduleFrame:SetPropagateKeyboardInput(true)
-scheduleFrame:SetScript("OnKeyDown", sendMessage)
+scheduleFrame:SetScript("OnKeyDown", tryDispatchScheduledMessage)
 scheduleFrame:Hide()
 
 local function scheduleNextMessage(callback)
-	--print("scheduling next message")
-	sendCallback = callback;
-
+	sendCallback = callback
 	scheduleFrame:Show()
 end
 
-local timer
-
-
-
-
-
-
 local function enableSpamming()
-	msgCounter = minReqMessagesInBetween; -- to allow first message to go through;
-	AddonNS.events:RegisterEvent("CHAT_MSG_CHANNEL", CountMessages)
-	--print("enabling spamming")
-	spammingActive = true;
-	local function spamLoop()
-		--print("spamm loop")
-		local callback = function()
-			--print("callback triggered")
+	msgCounter = MIN_REQUESTES_IN_BETWEEN_MESSAGES
+	AddonNS.events:RegisterEvent("CHAT_MSG_CHANNEL", countTradeMessages)
+	spammingActive = true
 
-			if (spammingActive) then -- to prevent from reactivating the loop when dispatching a message			print("Looping yo!", GetTime())
-				--print("scheduling timer")
-				timer = C_Timer.NewTimer(minLoopTime, spamLoop);
+	local function spamLoop()
+		local callback = function()
+			if spammingActive then
+				timer = C_Timer.NewTimer(MIN_LOOP_WAIT_TIME_BETWEEN_MESSAGES, spamLoop)
 			end
 		end
-		scheduleNextMessage(callback);
+		scheduleNextMessage(callback)
 	end
 
 	spamLoop()
@@ -264,37 +257,32 @@ end
 
 local function disableSpamming()
 	AddonNS.events:UnregisterEvent("CHAT_MSG_CHANNEL")
-	--print("disabling spamming")
-	spammingActive = false;
-	if (timer) then
-		timer:Cancel();
+	spammingActive = false
+	if timer then
+		timer:Cancel()
 	end
-	sendCallback = nil;
-	scheduleFrame:Hide();
+	sendCallback = nil
+	scheduleFrame:Hide()
 end
 
-local function UpdateSpammer()
-	--print("UpdateSpammer", AddonNS.db.spam, spammingActive, isOnTradeChat())
+local function updateSpammerState()
 	if AddonNS.db.spam and not spammingActive and isOnTradeChat() then
 		enableSpamming()
-	elseif (spammingActive and (not AddonNS.db.spam or not isOnTradeChat())) then
-		disableSpamming();
+	elseif spammingActive and (not AddonNS.db.spam or not isOnTradeChat()) then
+		disableSpamming()
 	end
 end
+
 function AddonNS.toggleSpamming()
-	if (AddonNS.db.spam) then
-		AddonNS.db.spam = false;
-		print("disabling spamming");
+	if AddonNS.db.spam then
+		AddonNS.db.spam = false
+		print("disabling spamming")
 	else
-		AddonNS.db.spam = true;
-		print("enabling spamming");
+		AddonNS.db.spam = true
+		print("enabling spamming")
 	end
-	UpdateSpammer();
+	updateSpammerState()
 end
 
-commands["toggle"] = function()
-	AddonNS.toggleSpamming()
-end
-
-AddonNS.events:RegisterEvent("CHANNEL_UI_UPDATE", UpdateSpammer)
-AddonNS.events:RegisterEvent("PLAYER_ENTERING_WORLD", UpdateSpammer)
+AddonNS.events:RegisterEvent("CHANNEL_UI_UPDATE", updateSpammerState)
+AddonNS.events:RegisterEvent("PLAYER_ENTERING_WORLD", updateSpammerState)
