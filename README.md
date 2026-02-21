@@ -1,6 +1,11 @@
 # MyTradeChatSpammer
 
-MyTradeChatSpammer is a World of Warcraft addon for storing trade messages and posting them to Trade chat in a rotating loop.
+
+**MyTradeChatSpammer is a World of Warcraft addon for storing trade messages and posting them to Trade chat in a rotating loop.**
+
+I like the new crafting system, but one of its downsides is that, in order to craft for others, people need to know you exist. This led to the creation of this addon, which solves that problem. It allows you to set up multiple messages to post in trade chat, such as “LFW [Blacksmith] – can craft max ilvl tools!” or “LFW – crafting all tools, /w me!” The messages rotate in a cycle while you are in a city and actively playing. 
+
+For a long time, I was hesitant to share this addon publicly to avoid contributing to trade chat spam. However, I noticed that other addons already offer similar functionality, so I decided to release this one as well. There are built-in limits to prevent excessive messaging beyond what someone would send manually by clicking a macro. The only difference is that with this addon, you do not have to click the macro — you can simply play the game.
 
 ## What it does
 
@@ -30,7 +35,6 @@ MyTradeChatSpammer is a World of Warcraft addon for storing trade messages and p
 ## Slash commands
 
 Base command: `/mtcs`
-
 - `/mtcs r <message>`
   - Save a message with an auto-generated ID.
 - `/mtcs record <id> <message>`
@@ -48,13 +52,14 @@ Base command: `/mtcs`
 
 ## Spamming behavior
 
-- Spam loop runs only while both are true:
-  - spam is enabled
-  - you are currently in `Trade - City`
-- On enable, it allows one immediate post by setting the message counter to the threshold.
-- After each send it counts the number of messages other players have posted as well as waits not to overspam the trade channel with messages.
-- The messages are sent only when you actively play the game, ie. press buttons.
+* The spam loop runs only when both conditions are true:
+  * Spam is enabled
+  * You are currently in Trade - City
+* When enabled, it allows one immediate post by setting the message counter to the threshold.
+* After each message is sent, it tracks the number of messages posted by other players and waits to avoid overspamming the trade channel.
+* Messages are only sent while you are actively playing the game, such as when pressing buttons.
+
 
 ## License
 
-See `LICENSE.md`.
+See [LICENSE](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyTradeChatSpammer/refs/heads/main/LICENSE).
