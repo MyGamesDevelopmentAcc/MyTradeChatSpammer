@@ -1,9 +1,17 @@
 ## Interface: 100100, 120000
 ## Title: |cffff2459My|r|cffffffffTradeChatSpammer|r
 ## DefaultState: Enabled
-## Version: 10.1.0-1.1
+## Version: @project-version@
 ## SavedVariablesPerCharacter: MyTradeChatSpammerDB
 ## AddonCompartmentFunc: MyTradeChatSpammer_MinimapOnClick
+#@debug@
 ## Dependencies:  MyLibrary_GUI, MyLibrary_Common
+#@end-debug@
+#@non-debug@
+# ## OptionalDeps:  MyLibrary_GUI, MyLibrary_Common
+# Libs/MyLibrary_Common/common.xml
+# Libs/MyLibrary_GUI/gui.xml
+#@end-non-debug@
+
 main.lua
 gui.lua
