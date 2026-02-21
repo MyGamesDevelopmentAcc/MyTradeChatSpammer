@@ -21,20 +21,20 @@ _G["SLASH_" .. addonName .. "SlashCommand1"] = "/mtcs"
 
 -- CONFIG
 local maxWaitSpamTime = 120; -- maximal to send regardless
-local minLoopTime = 60;      -- minmal can be set to 15 but it then spams a lot
-local minReqMessagesInBetween = 3;
+local minLoopTime = 15;      -- minmal can be set to 15 but it then spams a lot
+local minReqMessagesInBetween = 5;
 
 -- /mtcs r -- records with random id
--- [not yet implemented] /mtcs play MY_SUPER_ID1 say|trade
--- [not yet implemented] /mtcs play MY_SUPER_ID1
--- [not yet implemented] /mtcs playnext MY_SUPERGROUP_ID1 say|trade
+-- [not yet implemented] /mtcs send MY_SUPER_ID1 say|trade
+-- [not yet implemented] /mtcs send MY_SUPER_ID1
+-- [not yet implemented] /mtcs sendnext MY_SUPERGROUP_ID1 say|trade
 -- [not yet implemented] /mtcs clear ID
 -- [not yet implemented] /mtcs clearall
 -- [not yet implemented] /mtcs print (optional)ID --if ID not provided, prints all recorded messages
 
 -- /mtcs r -- records with random id
 -- /mtcs record MY_SUPER_ID1 WTS super cost thingy
--- /mtcs spam -- enable and disable spmming
+-- /mtcs toggle -- enable and disable spmming
 -- /mtcs delete ID -- removes given Id
 
 local commands = {};
@@ -44,6 +44,9 @@ local function getRecordsAsList()
 		table.insert(singlesPlaylist, v);
 	end
 	return singlesPlaylist;
+end
+local function trim(txt)
+	return txt and txt:match("^%s*(.-)%s*$") or "";
 end
 
 local function record(id, txt)
@@ -65,25 +68,31 @@ AddonNS.delete = delete;
 
 _G["MTCS_API_Record"] = record;
 commands["r"] = function(txt)
+	txt = trim(txt);
+	if (#txt == 0) then
+		print("Usage: /mtcs r <message>");
+		return;
+	end
 	record(nil, txt)
 end
 
 commands["delete"] = function(txt)
+	txt = trim(txt);
+	if (#txt == 0) then
+		print("Usage: /mtcs delete <id>");
+		return;
+	end
 	delete(txt);
 end
 
 commands["record"] = function(txt)
-	local id = txt:sub(1, txt:find(" ") - 1);
-	txt = txt:sub(txt:find(" ") + 1);
-	record(id, txt)
-end
-
-local function getRecordsAsList()
-	local singlesPlaylist = {}
-	for i, v in pairs(AddonNS.db.singles) do
-		table.insert(singlesPlaylist, v);
+	txt = trim(txt);
+	local id, message = txt:match("^(%S+)%s+(.+)$");
+	if (not id or not message) then
+		print("Usage: /mtcs record <id> <message>");
+		return;
 	end
-	return singlesPlaylist;
+	record(id, message)
 end
 
 local function playNext(where)
@@ -95,18 +104,27 @@ local function playNext(where)
 	end
 end
 
-commands["play"] = function(txt)
+local function sendById(id, where)
+	local message = AddonNS.db.singles[id];
+	if (not message or #message == 0) then
+		print("No message found for id:", id);
+		return;
+	end
+	SendChatMessage(message, where, nil, 2);
+end
+
+commands["send"] = function(txt)
 	local id, where = strsplit(" ", txt);
 	where = where or "channel";
 
 	if (id and #id > 0) then
-		print(id, where)
-		SendChatMessage(AddonNS.db.singles[id], where, nil, 2);
+		sendById(id, where);
 	else
 		playNext(where)
 	end
 end
 commands["print"] = function(txt)
+	txt = trim(txt);
 	--print("---")
 	--print(txt)
 	--print("---")
@@ -119,13 +137,34 @@ commands["print"] = function(txt)
 		end
 	end
 end
+commands["help"] = function()
+	print("MyTradeChatSpammer commands:");
+	print("/mtcs help");
+	print("/mtcs r <message>");
+	print("/mtcs record <id> <message>");
+	print("/mtcs delete <id>");
+	print("/mtcs print [id]");
+	print("/mtcs send [id] [chatType]");
+	print("/mtcs toggle");
+end
 SlashCmdList[addonName .. "SlashCommand"] = function(msg)
-	--print(msg)
-	local searchTill = msg:find(" ");
-	searchTill = searchTill and (searchTill - 1);
-	local cmd = msg:sub(1, searchTill);
-	local txt = searchTill and msg:sub(msg:find(" ") + 1) or "";
-	commands[cmd](txt);
+	msg = trim(msg);
+	if (#msg == 0) then
+		commands["help"]();
+		return;
+	end
+
+	local cmd, txt = msg:match("^(%S+)%s*(.-)$");
+	cmd = string.lower(cmd or "");
+	txt = txt or "";
+
+	local handler = commands[cmd];
+	if (not handler) then
+		print("Unknown command:", cmd);
+		commands["help"]();
+		return;
+	end
+	handler(txt);
 end
 local spammingActive = false;
 local function isOnTradeChat()
@@ -253,7 +292,7 @@ function AddonNS.toggleSpamming()
 	UpdateSpammer();
 end
 
-commands["spam"] = function()
+commands["toggle"] = function()
 	AddonNS.toggleSpamming()
 end
 

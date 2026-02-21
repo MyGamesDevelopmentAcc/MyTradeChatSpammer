@@ -1,5 +1,5 @@
-## Interface: 100100
-## Title: |CFFFF2459My|r TradeChatSpammer
+## Interface: 100100, 120000
+## Title: |cffff2459My|rcffffffffTradeChatSpammer|r
 ## DefaultState: Enabled
 ## Version: 10.1.0-1.1
 ## SavedVariablesPerCharacter: MyTradeChatSpammerDB
