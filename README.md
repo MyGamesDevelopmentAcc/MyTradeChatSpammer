@@ -9,6 +9,8 @@ MyTradeChatSpammer is a World of Warcraft addon for storing trade messages and p
 - Can post messages to Trade chat on a timed loop when enabled.
 - Supports slash commands for basic message management.
 
+![UI](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyTradeChatSpammer/main/.previews/ui.png)
+
 ## Opening the addon
 
 - Click the addon in the Addon Compartment menu (top-right addon icon area).
