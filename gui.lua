@@ -141,10 +141,19 @@ local function createEditBox(frame, posX, posY, height)
     return textScrollFrame
 end
 containerFrame.textScrollFrame = createEditBox(containerFrame, 25, 40, 60)
+local messageEditBox = containerFrame.textScrollFrame.EditBox
 
-hooksecurefunc("SetItemRef", function(link, text, button)
-    containerFrame.textScrollFrame.EditBox:Insert(text)
-end)
+-- Support modified-click links (bags, character frame, loot, chat item links, etc.) into this edit box.
+do
+    local originalHandleModifiedItemClick = HandleModifiedItemClick
+    function HandleModifiedItemClick(link, itemLocation)
+        if self.mainFrame:IsShown() and messageEditBox:HasFocus() and IsModifiedClick("CHATLINK") then
+            messageEditBox:Insert(link)
+            return true
+        end
+        return originalHandleModifiedItemClick(link, itemLocation)
+    end
+end
 
 
 
