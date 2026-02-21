@@ -1,4 +1,4 @@
-package-as: MyBags
+package-as: MyTradeChatSpammer
 
 externals:
   Libs/MyLibrary_GUI:
